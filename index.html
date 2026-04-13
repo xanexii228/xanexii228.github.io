@@ -1,99 +1,39 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Моё приложение</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Telegram App</title>
     <style>
         body {
             margin: 0;
             padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-        }
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
+            background: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            font-family: Arial;
         }
         button {
             background: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            color: white;
+            padding: 10px 20px;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-        }
-        .user-info {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Добро пожаловать!</h1>
-        <div class="user-info" id="userInfo">
-            Загрузка данных...
-        </div>
-        <button id="closeBtn">Закрыть приложение</button>
-        <button id="sendDataBtn">Отправить данные боту</button>
-    </div>
-
+    <h1>Привет из Telegram!</h1>
+    <button onclick="window.Telegram.WebApp.close()">Закрыть</button>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
-        // Инициализация WebApp
         const tg = window.Telegram.WebApp;
-        
-        // Сообщаем Telegram, что приложение готово
         tg.ready();
-        
-        // Расширяем на весь экран (опционально)
         tg.expand();
         
-        // Получаем данные пользователя
-        const user = tg.initDataUnsafe?.user;
-        
-        if (user) {
-            document.getElementById('userInfo').innerHTML = `
-                <strong>Ваши данные:</strong><br>
-                ID: ${user.id}<br>
-                Имя: ${user.first_name} ${user.last_name || ''}<br>
-                Username: ${user.username ? '@' + user.username : 'не указан'}
-            `;
-        } else {
-            document.getElementById('userInfo').innerHTML = 'Данные пользователя не получены';
-        }
-        
-        // Кнопка закрытия
-        document.getElementById('closeBtn').addEventListener('click', () => {
-            tg.close();
-        });
-        
-        // Кнопка отправки данных боту
-        document.getElementById('sendDataBtn').addEventListener('click', () => {
-            const data = {
-                action: 'button_clicked',
-                user_id: user?.id,
-                timestamp: new Date().toISOString(),
-                message: 'Пользователь нажал кнопку'
-            };
-            
-            // Отправляем данные боту
-            tg.sendData(JSON.stringify(data));
-            
-            // Показываем всплывашку (опционально)
-            tg.showAlert('Данные отправлены боту!');
-        });
-        
-        // Обработка темы Telegram (светлая/темная)
-        if (tg.colorScheme === 'dark') {
-            document.body.style.background = '#1a1a1a';
+        // Показываем данные пользователя
+        if (tg.initDataUnsafe?.user) {
+            console.log('Пользователь:', tg.initDataUnsafe.user.first_name);
         }
     </script>
 </body>
