@@ -3,89 +3,516 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Мой Telegram App</title>
+    <title>CS Cases | Открывай кейсы</title>
     <style>
-        body {
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
             padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
         }
+
         .container {
-            max-width: 400px;
+            max-width: 500px;
             margin: 0 auto;
-            text-align: center;
         }
-        button {
-            background: var(--tg-theme-button-color, '#2481cc');
-            color: var(--tg-theme-button-text-color, '#ffffff');
+
+        /* Карточка пользователя */
+        .user-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .balance {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-weight: bold;
+        }
+
+        .stars {
+            color: #ffd700;
+            font-size: 18px;
+        }
+
+        /* Кейсы */
+        .cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .case-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .case-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .case-emoji {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .case-name {
+            color: white;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .case-price {
+            color: #ffd700;
+            font-size: 14px;
+        }
+
+        .case-price::before {
+            content: "⭐ ";
+        }
+
+        /* Модальное окно открытия */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 30px;
+            padding: 30px;
+            text-align: center;
+            max-width: 300px;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .reward-emoji {
+            font-size: 80px;
+            margin: 20px 0;
+        }
+
+        .reward-name {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .reward-rarity {
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .common { background: #6c757d; }
+        .rare { background: #007bff; }
+        .epic { background: #9b59b6; }
+        .legendary { background: #ff9800; }
+
+        .close-modal {
+            background: rgba(255, 255, 255, 0.2);
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        /* Кнопки */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
             font-size: 16px;
             cursor: pointer;
-            margin: 10px;
+            margin: 5px;
+            transition: transform 0.2s;
         }
-        .info {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            padding: 15px;
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .inventory-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        /* Инвентарь */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .inventory-item {
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
-            margin: 20px 0;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 50px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Моё приложение</h1>
-        <div class="info" id="userInfo">
-            Загрузка...
+        <!-- Карточка пользователя -->
+        <div class="user-card">
+            <div class="user-info">
+                <div>
+                    <div id="userName">Загрузка...</div>
+                    <div style="font-size: 12px; opacity: 0.8;">ID: <span id="userId">-</span></div>
+                </div>
+                <div class="balance">
+                    <span class="stars">⭐</span>
+                    <span id="balance">0</span>
+                </div>
+            </div>
         </div>
-        <button id="closeBtn">Закрыть</button>
-        <button id="alertBtn">Показать уведомление</button>
+
+        <!-- Кейсы -->
+        <h2 style="color: white; margin-bottom: 15px;">📦 Доступные кейсы</h2>
+        <div class="cases-grid" id="casesGrid">
+            <div class="loading">Загрузка кейсов...</div>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn inventory-btn" onclick="showInventory()">🎒 Инвентарь</button>
+            <button class="btn" onclick="refreshData()">🔄 Обновить</button>
+            <button class="btn" onclick="closeApp()">❌ Закрыть</button>
+        </div>
+
+        <!-- Инвентарь -->
+        <div id="inventoryPanel" class="hidden">
+            <div class="user-card" style="margin-top: 20px;">
+                <h3 style="margin-bottom: 10px;">🎒 Твой инвентарь</h3>
+                <div id="inventoryList" class="inventory-grid">
+                    <div>Пусто</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Подключаем Telegram Web App SDK -->
-    <script src="telegramwebapp.js"></script>
-    
+    <!-- Модальное окно результата -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <div id="rewardEmoji" class="reward-emoji">🎁</div>
+            <div id="rewardName" class="reward-name">Название</div>
+            <div id="rewardRarity" class="reward-rarity">Редкость</div>
+            <div id="rewardValue" style="color: white; margin: 10px 0;"></div>
+            <button class="close-modal" onclick="closeModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Инициализация
-        let tg = window.Telegram.WebApp;
-        
-        // Сообщаем, что приложение готово
+        // Telegram
+        const tg = window.Telegram.WebApp;
         tg.ready();
-        
-        // Расширяем на весь экран
         tg.expand();
         
-        // Получаем данные пользователя
-        const user = tg.initDataUnsafe?.user;
-        const userInfoDiv = document.getElementById('userInfo');
+        // Supabase (ЗАМЕНИ НА СВОИ ДАННЫЕ!)
+        const SUPABASE_URL = 'https://ТВОЙ_ПРОЕКТ.supabase.co';
+        const SUPABASE_KEY = 'ТВОЙ_ANON_KEY';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        if (user) {
-            userInfoDiv.innerHTML = `
-                <strong>👤 Ваши данные:</strong><br>
-                ID: ${user.id}<br>
-                Имя: ${user.first_name} ${user.last_name || ''}<br>
-                Username: ${user.username ? '@' + user.username : 'не указан'}<br>
-                Язык: ${user.language_code || 'не указан'}
-            `;
-        } else {
-            userInfoDiv.innerHTML = '⚠️ Данные пользователя не получены';
+        // Данные пользователя
+        const user = tg.initDataUnsafe?.user;
+        let currentUser = null;
+        
+        // Инициализация
+        async function init() {
+            if (!user) {
+                document.getElementById('userName').innerHTML = '⚠️ Ошибка авторизации';
+                return;
+            }
+            
+            document.getElementById('userName').innerHTML = `👤 ${user.first_name}`;
+            document.getElementById('userId').innerHTML = user.id;
+            
+            await registerUser();
+            await loadBalance();
+            await loadCases();
         }
         
-        // Кнопка закрытия
-        document.getElementById('closeBtn').addEventListener('click', () => {
+        // Регистрация пользователя
+        async function registerUser() {
+            const { data, error } = await supabase
+                .from('users')
+                .upsert({
+                    user_id: user.id,
+                    username: user.username || user.first_name,
+                    balance_stars: 5
+                })
+                .select();
+            
+            if (error) console.error('Ошибка регистрации:', error);
+        }
+        
+        // Загрузка баланса
+        async function loadBalance() {
+            const { data, error } = await supabase
+                .from('users')
+                .select('balance_stars')
+                .eq('user_id', user.id)
+                .single();
+            
+            if (data) {
+                document.getElementById('balance').innerHTML = data.balance_stars;
+                currentUser = data;
+            }
+        }
+        
+        // Загрузка кейсов
+        async function loadCases() {
+            const { data, error } = await supabase
+                .from('cases')
+                .select('*')
+                .eq('is_active', true);
+            
+            if (error) {
+                document.getElementById('casesGrid').innerHTML = '<div>Ошибка загрузки</div>';
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                document.getElementById('casesGrid').innerHTML = '<div>Кейсы временно недоступны</div>';
+                return;
+            }
+            
+            document.getElementById('casesGrid').innerHTML = data.map(caseItem => `
+                <div class="case-card" onclick="openCase(${caseItem.case_id}, ${caseItem.price_stars})">
+                    <div class="case-emoji">📦</div>
+                    <div class="case-name">${caseItem.name}</div>
+                    <div class="case-price">${caseItem.price_stars}</div>
+                </div>
+            `).join('');
+        }
+        
+        // Открыть кейс
+        async function openCase(caseId, price) {
+            const currentBalance = parseInt(document.getElementById('balance').innerHTML);
+            
+            if (currentBalance < price) {
+                tg.showAlert(`❌ Не хватает Stars! Нужно: ${price}, у тебя: ${currentBalance}`);
+                return;
+            }
+            
+            // Списываем Stars
+            const newBalance = currentBalance - price;
+            await supabase
+                .from('users')
+                .update({ balance_stars: newBalance })
+                .eq('user_id', user.id);
+            
+            document.getElementById('balance').innerHTML = newBalance;
+            
+            // Получаем награду по шансам
+            const { data: rewards } = await supabase
+                .from('rewards')
+                .select('*')
+                .eq('case_id', caseId);
+            
+            // Выбираем случайную награду
+            let totalChance = rewards.reduce((sum, r) => sum + r.chance, 0);
+            let random = Math.random() * totalChance;
+            let current = 0;
+            let selectedReward = rewards[0];
+            
+            for (let reward of rewards) {
+                current += reward.chance;
+                if (random <= current) {
+                    selectedReward = reward;
+                    break;
+                }
+            }
+            
+            // Начисляем награду
+            let rewardText = '';
+            if (selectedReward.stars_amount > 0) {
+                const newStars = newBalance + selectedReward.stars_amount;
+                await supabase
+                    .from('users')
+                    .update({ balance_stars: newStars })
+                    .eq('user_id', user.id);
+                document.getElementById('balance').innerHTML = newStars;
+                rewardText = `⭐ +${selectedReward.stars_amount} Stars`;
+            } else if (selectedReward.premium_days > 0) {
+                rewardText = `👑 +${selectedReward.premium_days} дней Premium`;
+            }
+            
+            // Сохраняем в инвентарь
+            await supabase
+                .from('inventory')
+                .insert({
+                    user_id: user.id,
+                    reward_id: selectedReward.reward_id
+                });
+            
+            // Обновляем счётчик открытий
+            await supabase.rpc('increment_cases', { user_id: user.id });
+            
+            // Показываем результат
+            showReward(selectedReward, rewardText);
+        }
+        
+        // Показать выигрыш
+        function showReward(reward, rewardText) {
+            const rarityNames = {
+                'common': 'Обычный',
+                'rare': 'Редкий',
+                'epic': 'Эпический',
+                'legendary': 'Легендарный'
+            };
+            
+            const rarityColors = {
+                'common': 'common',
+                'rare': 'rare',
+                'epic': 'epic',
+                'legendary': 'legendary'
+            };
+            
+            let emoji = '🎁';
+            if (reward.stars_amount > 0) emoji = '⭐';
+            if (reward.premium_days > 0) emoji = '👑';
+            
+            document.getElementById('rewardEmoji').innerHTML = emoji;
+            document.getElementById('rewardName').innerHTML = reward.name;
+            document.getElementById('rewardRarity').innerHTML = rarityNames[reward.rarity] || reward.rarity;
+            document.getElementById('rewardRarity').className = `reward-rarity ${rarityColors[reward.rarity] || 'common'}`;
+            document.getElementById('rewardValue').innerHTML = rewardText;
+            
+            document.getElementById('resultModal').style.display = 'flex';
+            
+            // Вибрация (если есть)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+        
+        // Показать инвентарь
+        async function showInventory() {
+            const panel = document.getElementById('inventoryPanel');
+            const isHidden = panel.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Загружаем инвентарь
+                const { data, error } = await supabase
+                    .from('inventory')
+                    .select(`
+                        id,
+                        opened_at,
+                        rewards (
+                            name,
+                            rarity,
+                            stars_amount,
+                            premium_days
+                        )
+                    `)
+                    .eq('user_id', user.id)
+                    .order('opened_at', { ascending: false });
+                
+                if (data && data.length > 0) {
+                    document.getElementById('inventoryList').innerHTML = data.map(item => `
+                        <div class="inventory-item">
+                            <div style="font-size: 30px;">
+                                ${item.rewards.stars_amount > 0 ? '⭐' : item.rewards.premium_days > 0 ? '👑' : '🎁'}
+                            </div>
+                            <div style="font-size: 12px; color: white;">${item.rewards.name}</div>
+                            <div style="font-size: 10px; opacity: 0.7;">${new Date(item.opened_at).toLocaleDateString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('inventoryList').innerHTML = '<div style="text-align: center; padding: 20px;">У тебя пока нет предметов 😢</div>';
+                }
+                
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+        
+        // Обновить данные
+        async function refreshData() {
+            await loadBalance();
+            await loadCases();
+            tg.showAlert('✅ Данные обновлены!');
+        }
+        
+        // Закрыть приложение
+        function closeApp() {
             tg.close();
-        });
+        }
         
-        // Кнопка уведомления
-        document.getElementById('alertBtn').addEventListener('click', () => {
-            tg.showAlert('Привет из веб-приложения!');
-        });
+        // Закрыть модалку
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
         
-        // Меняем цвет кнопок в зависимости от темы Telegram
-        document.body.style.backgroundColor = tg.backgroundColor;
+        // Запуск
+        init();
     </script>
 </body>
 </html>
