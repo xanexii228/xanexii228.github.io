@@ -23,7 +23,6 @@
             margin: 0 auto;
         }
 
-        /* Карточка пользователя */
         .user-card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -52,7 +51,6 @@
             font-size: 18px;
         }
 
-        /* Кейсы */
         .cases-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -71,9 +69,8 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .case-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        .case-card:active {
+            transform: scale(0.95);
         }
 
         .case-emoji {
@@ -96,7 +93,6 @@
             content: "⭐ ";
         }
 
-        /* Модальное окно открытия */
         .modal {
             display: none;
             position: fixed;
@@ -108,12 +104,6 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            animation: fadeIn 0.3s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         .modal-content {
@@ -122,12 +112,6 @@
             padding: 30px;
             text-align: center;
             max-width: 300px;
-            animation: slideUp 0.3s;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
 
         .reward-emoji {
@@ -165,7 +149,6 @@
             cursor: pointer;
         }
 
-        /* Кнопки */
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
@@ -175,7 +158,6 @@
             font-size: 16px;
             cursor: pointer;
             margin: 5px;
-            transition: transform 0.2s;
         }
 
         .btn:active {
@@ -186,7 +168,6 @@
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
-        /* Инвентарь */
         .inventory-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -212,11 +193,15 @@
             color: white;
             padding: 50px;
         }
+
+        h2 {
+            color: white;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Карточка пользователя -->
         <div class="user-card">
             <div class="user-info">
                 <div>
@@ -230,20 +215,17 @@
             </div>
         </div>
 
-        <!-- Кейсы -->
-        <h2 style="color: white; margin-bottom: 15px;">📦 Доступные кейсы</h2>
+        <h2>📦 Доступные кейсы</h2>
         <div class="cases-grid" id="casesGrid">
             <div class="loading">Загрузка кейсов...</div>
         </div>
 
-        <!-- Кнопки управления -->
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn inventory-btn" onclick="showInventory()">🎒 Инвентарь</button>
-            <button class="btn" onclick="refreshData()">🔄 Обновить</button>
-            <button class="btn" onclick="closeApp()">❌ Закрыть</button>
+        <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button class="btn inventory-btn" id="inventoryBtn">🎒 Инвентарь</button>
+            <button class="btn" id="refreshBtn">🔄 Обновить</button>
+            <button class="btn" id="closeBtn">❌ Закрыть</button>
         </div>
 
-        <!-- Инвентарь -->
         <div id="inventoryPanel" class="hidden">
             <div class="user-card" style="margin-top: 20px;">
                 <h3 style="margin-bottom: 10px;">🎒 Твой инвентарь</h3>
@@ -254,265 +236,352 @@
         </div>
     </div>
 
-    <!-- Модальное окно результата -->
     <div id="resultModal" class="modal">
         <div class="modal-content">
             <div id="rewardEmoji" class="reward-emoji">🎁</div>
             <div id="rewardName" class="reward-name">Название</div>
             <div id="rewardRarity" class="reward-rarity">Редкость</div>
             <div id="rewardValue" style="color: white; margin: 10px 0;"></div>
-            <button class="close-modal" onclick="closeModal()">Закрыть</button>
+            <button class="close-modal" id="closeModalBtn">Закрыть</button>
         </div>
     </div>
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Используем локальный файл, который у тебя есть -->
+    <script src="telegram-web-app.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
-        // Telegram
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        
-        // Supabase (ЗАМЕНИ НА СВОИ ДАННЫЕ!)
-        const SUPABASE_URL = 'https://advotnstaapqqspmrooc.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_iqhcDhB3-31yMky9xjOyTg_RaEoxChD';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        // Данные пользователя
-        const user = tg.initDataUnsafe?.user;
-        let currentUser = null;
-        
-        // Инициализация
-        async function init() {
-            if (!user) {
-                document.getElementById('userName').innerHTML = '⚠️ Ошибка авторизации';
-                return;
+        // Ждём полной загрузки страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Telegram
+            let tg = null;
+            
+            // Пытаемся получить Telegram WebApp
+            if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+            } else {
+                console.log('Telegram WebApp не загружен, работаем в тестовом режиме');
+                // Создаём заглушку для тестирования
+                tg = {
+                    ready: function() {},
+                    expand: function() {},
+                    close: function() { alert('Закрытие приложения'); },
+                    showAlert: function(msg) { alert(msg); },
+                    initDataUnsafe: { user: { id: 123456, first_name: 'Тестер' } },
+                    HapticFeedback: { impactOccurred: function() {} }
+                };
             }
             
-            document.getElementById('userName').innerHTML = `👤 ${user.first_name}`;
-            document.getElementById('userId').innerHTML = user.id;
+            // Supabase (ЗАМЕНИ НА СВОИ ДАННЫЕ!)
+            const SUPABASE_URL = 'https://advotnstaapqqspmrooc.supabase.co';
+            const SUPABASE_KEY = 'sb_publishable_iqhcDhB3-31yMky9xjOyTg_RaEoxChD';
             
-            await registerUser();
-            await loadBalance();
-            await loadCases();
-        }
-        
-        // Регистрация пользователя
-        async function registerUser() {
-            const { data, error } = await supabase
-                .from('users')
-                .upsert({
-                    user_id: user.id,
-                    username: user.username || user.first_name,
-                    balance_stars: 5
-                })
-                .select();
+            let supabaseClient = null;
             
-            if (error) console.error('Ошибка регистрации:', error);
-        }
-        
-        // Загрузка баланса
-        async function loadBalance() {
-            const { data, error } = await supabase
-                .from('users')
-                .select('balance_stars')
-                .eq('user_id', user.id)
-                .single();
-            
-            if (data) {
-                document.getElementById('balance').innerHTML = data.balance_stars;
-                currentUser = data;
-            }
-        }
-        
-        // Загрузка кейсов
-        async function loadCases() {
-            const { data, error } = await supabase
-                .from('cases')
-                .select('*')
-                .eq('is_active', true);
-            
-            if (error) {
-                document.getElementById('casesGrid').innerHTML = '<div>Ошибка загрузки</div>';
-                return;
+            try {
+                if (typeof window.supabase !== 'undefined') {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                } else {
+                    console.error('Supabase не загружен');
+                }
+            } catch(e) {
+                console.error('Ошибка инициализации Supabase:', e);
             }
             
-            if (!data || data.length === 0) {
-                document.getElementById('casesGrid').innerHTML = '<div>Кейсы временно недоступны</div>';
-                return;
+            // Данные пользователя
+            const user = tg.initDataUnsafe?.user;
+            let currentUser = null;
+            
+            // Инициализация
+            async function init() {
+                if (!user) {
+                    document.getElementById('userName').innerHTML = '⚠️ Ошибка авторизации';
+                    return;
+                }
+                
+                document.getElementById('userName').innerHTML = `👤 ${user.first_name}`;
+                document.getElementById('userId').innerHTML = user.id;
+                
+                await registerUser();
+                await loadBalance();
+                await loadCases();
             }
             
-            document.getElementById('casesGrid').innerHTML = data.map(caseItem => `
-                <div class="case-card" onclick="openCase(${caseItem.case_id}, ${caseItem.price_stars})">
-                    <div class="case-emoji">📦</div>
-                    <div class="case-name">${caseItem.name}</div>
-                    <div class="case-price">${caseItem.price_stars}</div>
-                </div>
-            `).join('');
-        }
-        
-        // Открыть кейс
-        async function openCase(caseId, price) {
-            const currentBalance = parseInt(document.getElementById('balance').innerHTML);
-            
-            if (currentBalance < price) {
-                tg.showAlert(`❌ Не хватает Stars! Нужно: ${price}, у тебя: ${currentBalance}`);
-                return;
-            }
-            
-            // Списываем Stars
-            const newBalance = currentBalance - price;
-            await supabase
-                .from('users')
-                .update({ balance_stars: newBalance })
-                .eq('user_id', user.id);
-            
-            document.getElementById('balance').innerHTML = newBalance;
-            
-            // Получаем награду по шансам
-            const { data: rewards } = await supabase
-                .from('rewards')
-                .select('*')
-                .eq('case_id', caseId);
-            
-            // Выбираем случайную награду
-            let totalChance = rewards.reduce((sum, r) => sum + r.chance, 0);
-            let random = Math.random() * totalChance;
-            let current = 0;
-            let selectedReward = rewards[0];
-            
-            for (let reward of rewards) {
-                current += reward.chance;
-                if (random <= current) {
-                    selectedReward = reward;
-                    break;
+            // Регистрация
+            async function registerUser() {
+                if (!supabaseClient) return;
+                
+                try {
+                    const { error } = await supabaseClient
+                        .from('users')
+                        .upsert({
+                            user_id: user.id,
+                            username: user.username || user.first_name,
+                            balance_stars: 5
+                        });
+                    
+                    if (error) console.error('Ошибка регистрации:', error);
+                } catch(e) {
+                    console.error(e);
                 }
             }
             
-            // Начисляем награду
-            let rewardText = '';
-            if (selectedReward.stars_amount > 0) {
-                const newStars = newBalance + selectedReward.stars_amount;
-                await supabase
-                    .from('users')
-                    .update({ balance_stars: newStars })
-                    .eq('user_id', user.id);
-                document.getElementById('balance').innerHTML = newStars;
-                rewardText = `⭐ +${selectedReward.stars_amount} Stars`;
-            } else if (selectedReward.premium_days > 0) {
-                rewardText = `👑 +${selectedReward.premium_days} дней Premium`;
-            }
-            
-            // Сохраняем в инвентарь
-            await supabase
-                .from('inventory')
-                .insert({
-                    user_id: user.id,
-                    reward_id: selectedReward.reward_id
-                });
-            
-            // Обновляем счётчик открытий
-            await supabase.rpc('increment_cases', { user_id: user.id });
-            
-            // Показываем результат
-            showReward(selectedReward, rewardText);
-        }
-        
-        // Показать выигрыш
-        function showReward(reward, rewardText) {
-            const rarityNames = {
-                'common': 'Обычный',
-                'rare': 'Редкий',
-                'epic': 'Эпический',
-                'legendary': 'Легендарный'
-            };
-            
-            const rarityColors = {
-                'common': 'common',
-                'rare': 'rare',
-                'epic': 'epic',
-                'legendary': 'legendary'
-            };
-            
-            let emoji = '🎁';
-            if (reward.stars_amount > 0) emoji = '⭐';
-            if (reward.premium_days > 0) emoji = '👑';
-            
-            document.getElementById('rewardEmoji').innerHTML = emoji;
-            document.getElementById('rewardName').innerHTML = reward.name;
-            document.getElementById('rewardRarity').innerHTML = rarityNames[reward.rarity] || reward.rarity;
-            document.getElementById('rewardRarity').className = `reward-rarity ${rarityColors[reward.rarity] || 'common'}`;
-            document.getElementById('rewardValue').innerHTML = rewardText;
-            
-            document.getElementById('resultModal').style.display = 'flex';
-            
-            // Вибрация (если есть)
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-        }
-        
-        // Показать инвентарь
-        async function showInventory() {
-            const panel = document.getElementById('inventoryPanel');
-            const isHidden = panel.classList.contains('hidden');
-            
-            if (isHidden) {
-                // Загружаем инвентарь
-                const { data, error } = await supabase
-                    .from('inventory')
-                    .select(`
-                        id,
-                        opened_at,
-                        rewards (
-                            name,
-                            rarity,
-                            stars_amount,
-                            premium_days
-                        )
-                    `)
-                    .eq('user_id', user.id)
-                    .order('opened_at', { ascending: false });
+            // Загрузка баланса
+            async function loadBalance() {
+                if (!supabaseClient) {
+                    document.getElementById('balance').innerHTML = '0';
+                    return;
+                }
                 
-                if (data && data.length > 0) {
-                    document.getElementById('inventoryList').innerHTML = data.map(item => `
-                        <div class="inventory-item">
-                            <div style="font-size: 30px;">
-                                ${item.rewards.stars_amount > 0 ? '⭐' : item.rewards.premium_days > 0 ? '👑' : '🎁'}
-                            </div>
-                            <div style="font-size: 12px; color: white;">${item.rewards.name}</div>
-                            <div style="font-size: 10px; opacity: 0.7;">${new Date(item.opened_at).toLocaleDateString()}</div>
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('balance_stars')
+                        .eq('user_id', user.id)
+                        .single();
+                    
+                    if (data) {
+                        document.getElementById('balance').innerHTML = data.balance_stars;
+                        currentUser = data;
+                    }
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+            
+            // Загрузка кейсов
+            async function loadCases() {
+                if (!supabaseClient) {
+                    document.getElementById('casesGrid').innerHTML = '<div class="loading">⚠️ Supabase не настроен</div>';
+                    return;
+                }
+                
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('cases')
+                        .select('*')
+                        .eq('is_active', true);
+                    
+                    if (error) throw error;
+                    
+                    if (!data || data.length === 0) {
+                        document.getElementById('casesGrid').innerHTML = '<div class="loading">Кейсы временно недоступны</div>';
+                        return;
+                    }
+                    
+                    document.getElementById('casesGrid').innerHTML = data.map(caseItem => `
+                        <div class="case-card" data-case-id="${caseItem.case_id}" data-price="${caseItem.price_stars}">
+                            <div class="case-emoji">📦</div>
+                            <div class="case-name">${caseItem.name}</div>
+                            <div class="case-price">${caseItem.price_stars}</div>
                         </div>
                     `).join('');
-                } else {
-                    document.getElementById('inventoryList').innerHTML = '<div style="text-align: center; padding: 20px;">У тебя пока нет предметов 😢</div>';
+                    
+                    // Добавляем обработчики
+                    document.querySelectorAll('.case-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            const caseId = parseInt(card.dataset.caseId);
+                            const price = parseInt(card.dataset.price);
+                            openCase(caseId, price);
+                        });
+                    });
+                    
+                } catch(e) {
+                    console.error(e);
+                    document.getElementById('casesGrid').innerHTML = '<div class="loading">Ошибка загрузки кейсов</div>';
+                }
+            }
+            
+            // Открыть кейс
+            async function openCase(caseId, price) {
+                if (!supabaseClient) {
+                    tg.showAlert('⚠️ База данных не подключена');
+                    return;
                 }
                 
-                panel.classList.remove('hidden');
-            } else {
-                panel.classList.add('hidden');
+                const currentBalance = parseInt(document.getElementById('balance').innerHTML);
+                
+                if (currentBalance < price) {
+                    tg.showAlert(`❌ Не хватает Stars! Нужно: ${price}, у тебя: ${currentBalance}`);
+                    return;
+                }
+                
+                // Списываем Stars
+                const newBalance = currentBalance - price;
+                await supabaseClient
+                    .from('users')
+                    .update({ balance_stars: newBalance })
+                    .eq('user_id', user.id);
+                
+                document.getElementById('balance').innerHTML = newBalance;
+                
+                // Получаем награды
+                const { data: rewards } = await supabaseClient
+                    .from('rewards')
+                    .select('*')
+                    .eq('case_id', caseId);
+                
+                if (!rewards || rewards.length === 0) {
+                    tg.showAlert('Ошибка: нет наград в этом кейсе');
+                    return;
+                }
+                
+                // Выбираем случайную награду
+                let totalChance = rewards.reduce((sum, r) => sum + r.chance, 0);
+                let random = Math.random() * totalChance;
+                let current = 0;
+                let selectedReward = rewards[0];
+                
+                for (let reward of rewards) {
+                    current += reward.chance;
+                    if (random <= current) {
+                        selectedReward = reward;
+                        break;
+                    }
+                }
+                
+                // Начисляем награду
+                let rewardText = '';
+                let finalBalance = newBalance;
+                
+                if (selectedReward.stars_amount > 0) {
+                    finalBalance = newBalance + selectedReward.stars_amount;
+                    await supabaseClient
+                        .from('users')
+                        .update({ balance_stars: finalBalance })
+                        .eq('user_id', user.id);
+                    document.getElementById('balance').innerHTML = finalBalance;
+                    rewardText = `⭐ +${selectedReward.stars_amount} Stars`;
+                } else if (selectedReward.premium_days > 0) {
+                    rewardText = `👑 +${selectedReward.premium_days} дней Premium`;
+                }
+                
+                // Сохраняем в инвентарь
+                await supabaseClient
+                    .from('inventory')
+                    .insert({
+                        user_id: user.id,
+                        reward_id: selectedReward.reward_id
+                    });
+                
+                // Показываем результат
+                showReward(selectedReward, rewardText);
             }
-        }
-        
-        // Обновить данные
-        async function refreshData() {
-            await loadBalance();
-            await loadCases();
-            tg.showAlert('✅ Данные обновлены!');
-        }
-        
-        // Закрыть приложение
-        function closeApp() {
-            tg.close();
-        }
-        
-        // Закрыть модалку
-        function closeModal() {
-            document.getElementById('resultModal').style.display = 'none';
-        }
-        
-        // Запуск
-        init();
+            
+            // Показать выигрыш
+            function showReward(reward, rewardText) {
+                const rarityNames = {
+                    'common': 'Обычный',
+                    'rare': 'Редкий',
+                    'epic': 'Эпический',
+                    'legendary': 'Легендарный'
+                };
+                
+                const rarityColors = {
+                    'common': 'common',
+                    'rare': 'rare',
+                    'epic': 'epic',
+                    'legendary': 'legendary'
+                };
+                
+                let emoji = '🎁';
+                if (reward.stars_amount > 0) emoji = '⭐';
+                if (reward.premium_days > 0) emoji = '👑';
+                
+                document.getElementById('rewardEmoji').innerHTML = emoji;
+                document.getElementById('rewardName').innerHTML = reward.name;
+                document.getElementById('rewardRarity').innerHTML = rarityNames[reward.rarity] || reward.rarity;
+                document.getElementById('rewardRarity').className = `reward-rarity ${rarityColors[reward.rarity] || 'common'}`;
+                document.getElementById('rewardValue').innerHTML = rewardText;
+                
+                document.getElementById('resultModal').style.display = 'flex';
+                
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('medium');
+                }
+            }
+            
+            // Показать инвентарь
+            async function showInventory() {
+                const panel = document.getElementById('inventoryPanel');
+                const isHidden = panel.classList.contains('hidden');
+                
+                if (isHidden) {
+                    if (!supabaseClient) {
+                        tg.showAlert('⚠️ База данных не подключена');
+                        return;
+                    }
+                    
+                    const { data, error } = await supabaseClient
+                        .from('inventory')
+                        .select(`
+                            id,
+                            opened_at,
+                            rewards (
+                                name,
+                                rarity,
+                                stars_amount,
+                                premium_days
+                            )
+                        `)
+                        .eq('user_id', user.id)
+                        .order('opened_at', { ascending: false });
+                    
+                    if (data && data.length > 0) {
+                        document.getElementById('inventoryList').innerHTML = data.map(item => `
+                            <div class="inventory-item">
+                                <div style="font-size: 30px;">
+                                    ${item.rewards.stars_amount > 0 ? '⭐' : item.rewards.premium_days > 0 ? '👑' : '🎁'}
+                                </div>
+                                <div style="font-size: 12px; color: white;">${item.rewards.name}</div>
+                                <div style="font-size: 10px; opacity: 0.7;">${new Date(item.opened_at).toLocaleDateString()}</div>
+                            </div>
+                        `).join('');
+                    } else {
+                        document.getElementById('inventoryList').innerHTML = '<div style="text-align: center; padding: 20px;">У тебя пока нет предметов 😢</div>';
+                    }
+                    
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
+            }
+            
+            // Обновить
+            async function refreshData() {
+                await loadBalance();
+                await loadCases();
+                tg.showAlert('✅ Данные обновлены!');
+            }
+            
+            // Закрыть
+            function closeApp() {
+                tg.close();
+            }
+            
+            // Закрыть модалку
+            function closeModal() {
+                document.getElementById('resultModal').style.display = 'none';
+            }
+            
+            // Вешаем обработчики на кнопки
+            document.getElementById('inventoryBtn').addEventListener('click', showInventory);
+            document.getElementById('refreshBtn').addEventListener('click', refreshData);
+            document.getElementById('closeBtn').addEventListener('click', closeApp);
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            
+            // Закрытие модалки по клику вне
+            document.getElementById('resultModal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+            
+            // Запуск
+            init();
+        });
     </script>
 </body>
 </html>
